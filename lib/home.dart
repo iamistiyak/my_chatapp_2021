@@ -20,17 +20,20 @@ class HomeScreen extends StatefulWidget {
 
 
   final String currentUserId;
+  final String currentUserName;
 
-  HomeScreen({Key? key, required this.currentUserId}) : super(key: key);
+  HomeScreen({Key? key, required this.currentUserId, required this.currentUserName}) : super(key: key);
 
   @override
-  State createState() => HomeScreenState(currentUserId: currentUserId);
+  State createState() => HomeScreenState(currentUserId: currentUserId, currentUserName: currentUserName);
 }
 
 class HomeScreenState extends State<HomeScreen> {
-  HomeScreenState({Key? key, required this.currentUserId});
+  HomeScreenState({Key? key, required this.currentUserId, required this.currentUserName});
 
   final String currentUserId;
+  final String currentUserName;
+
   final FirebaseMessaging firebaseMessaging = FirebaseMessaging.instance;
   //For notification
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
@@ -393,6 +396,7 @@ class HomeScreenState extends State<HomeScreen> {
                     peerAvatar: userChat.photoUrl,
                     peerName: userChat.nickname,
                     peerPushToken: userChat.pushToken,
+                    currentUserName: currentUserName,
                   ),
                 ),
               );

@@ -5,9 +5,11 @@ import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:my_chatapp_2021/widget/full_photo.dart';
@@ -17,14 +19,14 @@ import 'package:http/http.dart' as http;
 
 
 import 'const.dart';
-
 class Chat extends StatelessWidget {
   final String peerId;
   final String peerAvatar;
   final String peerName;
   final String peerPushToken;
+  final String currentUserName;
 
-  Chat({Key? key, required this.peerId, required this.peerAvatar, required this.peerName, required this.peerPushToken}) : super(key: key);
+  Chat({Key? key, required this.peerId, required this.peerAvatar, required this.peerName, required this.peerPushToken, required this.currentUserName}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +101,7 @@ class Chat extends StatelessWidget {
         peerAvatar: peerAvatar,
         peerName: peerName,
         peerPushToken : peerPushToken,
+        currentUserName: currentUserName,
       ),
     );
   }
@@ -109,20 +112,22 @@ class ChatScreen extends StatefulWidget {
   final String peerAvatar;
   final String peerName;
   final String peerPushToken;
+  final String currentUserName;
 
-  ChatScreen({Key? key, required this.peerId, required this.peerAvatar, required this.peerName, required this.peerPushToken}) : super(key: key);
+  ChatScreen({Key? key, required this.peerId, required this.peerAvatar, required this.peerName, required this.peerPushToken, required this.currentUserName}) : super(key: key);
 
   @override
-  State createState() => ChatScreenState(peerId: peerId, peerAvatar: peerAvatar, peerName: peerName, peerPushToken: peerPushToken);
+  State createState() => ChatScreenState(peerId: peerId, peerAvatar: peerAvatar, peerName: peerName, peerPushToken: peerPushToken, currentUserName: currentUserName);
 }
 
 class ChatScreenState extends State<ChatScreen> {
-  ChatScreenState({Key? key, required this.peerId, required this.peerAvatar, required this.peerName, required this.peerPushToken});
+  ChatScreenState({Key? key, required this.peerId, required this.peerAvatar, required this.peerName, required this.peerPushToken, required this.currentUserName});
 
   String peerId;
   String peerAvatar;
   String peerName;
   String peerPushToken;
+  String currentUserName;
   String? id;
 
   List<QueryDocumentSnapshot> listMessage = new List.from([]);
@@ -248,9 +253,9 @@ class ChatScreenState extends State<ChatScreen> {
         );
       });
       //For notification
-      callOnFcmApiSendPushNotifications(peerPushToken);
+      callOnFcmApiSendPushNotifications(peerPushToken, content, currentUserName);
 
-      // const url2 = 'https://fcm.googleapis.com/fcm/send';
+      // // const url2 = 'https://fcm.googleapis.com/fcm/send';
       // var url2 = Uri.parse("https://fcm.googleapis.com/fcm/send");
       // var headers = {'Content-Type': 'application/json',
       //   'Authorization':'AAAAZYp1ruA:APA91bFpQ5movjnquLNcoXX-ng8gj7GfkMgbNESn42yeSxmSBhcVsY_DTkCnhOlxxRx-P-T7LGUPERsotEfrhBE1jA1gzl4Jtg1NcbAtV_sOOMWEpLPgPfs_nK81m-ocvsK3lPzozYMa'};
@@ -258,7 +263,7 @@ class ChatScreenState extends State<ChatScreen> {
       //   "title": "Test Notification",
       //   "text": "Refer by Aman Shaikh"
       // },
-      //   "to" : peerPushToken,
+      //   "to" : "$peerPushToken",
       // } ;
       // var response = await http.post(url2,headers:headers, body: jsonEncode(payload));
       // print(response.statusCode);
@@ -473,37 +478,40 @@ class ChatScreenState extends State<ChatScreen> {
               Row(
                 children: <Widget>[
                   isLastMessageLeft(index)
-                      ? Material(
-                          child: Image.network(
-                            peerAvatar,
-                            loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Center(
-                                child: CircularProgressIndicator(
-                                  color: deepPurple,
-                                  value: loadingProgress.expectedTotalBytes != null &&
-                                          loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                      : null,
-                                ),
-                              );
-                            },
-                            errorBuilder: (context, object, stackTrace) {
-                              return Icon(
-                                Icons.account_circle,
-                                size: 35,
-                                color: greyColor,
-                              );
-                            },
-                            width: 35,
-                            height: 35,
-                            fit: BoxFit.cover,
+                      ? Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Material(
+                            child: Image.network(
+                              peerAvatar,
+                              loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    color: deepPurple,
+                                    value: loadingProgress.expectedTotalBytes != null &&
+                                            loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                        : null,
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, object, stackTrace) {
+                                return Icon(
+                                  Icons.account_circle,
+                                  size: 35,
+                                  color: greyColor,
+                                );
+                              },
+                              width: 35,
+                              height: 35,
+                              fit: BoxFit.cover,
+                            ),
+                            borderRadius: BorderRadius.all(
+                              Radius.circular(18.0),
+                            ),
+                            clipBehavior: Clip.hardEdge,
                           ),
-                          borderRadius: BorderRadius.all(
-                            Radius.circular(18.0),
-                          ),
-                          clipBehavior: Clip.hardEdge,
-                        )
+                      )
                       : Container(width: 35.0),
                   document.get('type') == 0
                   // Text
@@ -927,23 +935,30 @@ class ChatScreenState extends State<ChatScreen> {
 
 //For Notification
 
-Future<bool> callOnFcmApiSendPushNotifications(String userToken) async {
+Future<bool> callOnFcmApiSendPushNotifications(String userToken, String content, String currentUserName) async {
 
-
+  // var postUrl = Uri.parse("https://fcm.googleapis.com/fcm/send");
   // var postUrl = 'https://fcm.googleapis.com/fcm/send';
   var postUrl = Uri.parse("https://fcm.googleapis.com/fcm/send");
+
   final data = {
-    "registration_ids" : userToken,
+    "registration_ids" : [userToken],
     "collapse_key" : "type_a",
+    'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+    "status": "done",
+    "screen": "NotificationPage",
+    'sound': 'default',
     "notification" : {
-      "title": 'NewTextTitle',
-      "body" : 'NewTextBody',
+      "title": '${currentUserName}',
+      "body" : '${content}',
+      "icon": "ic_launcher",
+      // "image": Uri.parse('${content}')
     }
   };
 
   final headers = {
     'content-type': 'application/json',
-    'Authorization': 'AAAAZYp1ruA:APA91bFpQ5movjnquLNcoXX-ng8gj7GfkMgbNESn42yeSxmSBhcVsY_DTkCnhOlxxRx-P-T7LGUPERsotEfrhBE1jA1gzl4Jtg1NcbAtV_sOOMWEpLPgPfs_nK81m-ocvsK3lPzozYMa' // 'key=YOUR_SERVER_KEY'
+    'Authorization': 'key=AAAAZYp1ruA:APA91bFpQ5movjnquLNcoXX-ng8gj7GfkMgbNESn42yeSxmSBhcVsY_DTkCnhOlxxRx-P-T7LGUPERsotEfrhBE1jA1gzl4Jtg1NcbAtV_sOOMWEpLPgPfs_nK81m-ocvsK3lPzozYMa' // 'key=YOUR_SERVER_KEY'
   };
 
   final response = await http.post(
@@ -958,8 +973,33 @@ Future<bool> callOnFcmApiSendPushNotifications(String userToken) async {
     return true;
   } else {
     print(' CFM error');
-    print(postUrl);
+    print(response.body);
+    print(response.statusCode);
     // on failure do sth
     return false;
   }
 }
+//
+// Future<Response> publishNotification() async {
+//   return await post(
+//     'https://fcm.googleapis.com/fcm/send',
+//     headers: <String, String>{
+//       'Content-Type': 'application/json',
+//       'Authorization': 'key=$firebaseServerKey',
+//     },
+//     body: jsonEncode(
+//       <String, dynamic>{
+//         "registration_ids": ["token_1", "token_2", ...],
+//         'priority': 'high',
+//         "data": <String, dynamic>{
+//           'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+//           "body": "Order#10",
+//           "title": "New Order",
+//           "status": "done",
+//           "screen": "NotificationPage",
+//           "description": "Order Details",
+//         }
+//       },
+//     ),
+//   );
+// }
