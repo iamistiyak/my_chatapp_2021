@@ -47,7 +47,7 @@ class LoginScreenState extends State<LoginScreen> {
     if (isLoggedIn && prefs?.getString('id') != null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomeScreen(currentUserId: prefs!.getString('id') ?? "")),
+        MaterialPageRoute(builder: (context) => HomeScreen(currentUserId: prefs!.getString('id') ?? "", currentUserName: prefs!.getString('nickname') ?? "",)),
       );
     }
 
@@ -107,7 +107,7 @@ class LoginScreenState extends State<LoginScreen> {
           isLoading = false;
         });
 
-        Navigator.push(context, MaterialPageRoute(builder: (context) => HomeScreen(currentUserId: firebaseUser.uid)));
+        Navigator.push(context, MaterialPageRoute(builder: (context) => HomeScreen(currentUserId: firebaseUser.uid, currentUserName: firebaseUser.displayName.toString(),)));
       } else {
         Fluttertoast.showToast(msg: "Sign in fail");
         this.setState(() {
